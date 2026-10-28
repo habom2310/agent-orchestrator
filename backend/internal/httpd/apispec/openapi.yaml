@@ -21451,6 +21451,8 @@ components:
           type: string
         messageId:
           type: string
+        namedForQuery:
+          type: boolean
         projectId:
           type: string
         projectName:

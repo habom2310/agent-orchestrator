@@ -7526,6 +7526,7 @@ export interface components {
             kind: "title" | "user" | "assistant" | "tool" | "command" | "path";
             machine?: string;
             messageId?: string;
+            namedForQuery?: boolean;
             projectId: string;
             projectName?: string;
             /** Format: double */
