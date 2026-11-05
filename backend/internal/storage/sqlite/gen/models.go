@@ -765,6 +765,7 @@ type Session struct {
 	TerminatedAt                     sql.NullTime
 	ImportSource                     string
 	DisplayNameExplicit              bool
+	RegisteredArtifactPaths          string
 }
 
 type SessionAgentAccount struct {
