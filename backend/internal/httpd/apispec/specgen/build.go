@@ -646,6 +646,7 @@ var schemaNames = map[string]string{ //nolint:gosec // Public OpenAPI type names
 	"ControllersSessionSearchResult":              "SessionSearchResult",
 	"ControllersSessionSearchHighlight":           "SessionSearchHighlight",
 	"ControllersSessionSearchCoverage":            "SessionSearchCoverage",
+	"ControllersSessionSearchCorrection":          "SessionSearchCorrection",
 	"ControllersSessionSearchMatchesResponse":     "SessionSearchMatchesResponse",
 	"ControllersSessionSearchIndexStatusResponse": "SessionSearchIndexStatusResponse",
 	"ControllersSessionSearchMatchesQuery":        "SessionSearchMatchesQuery",
