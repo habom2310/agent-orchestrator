@@ -16,6 +16,7 @@
 import { memo, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { CircleArrowUp, KeyRound, Plug, TriangleAlert } from "@/components/app-icons";
+import { agentAccountProviderFor, useAgentAccounts, useSessionAgentAccounts } from "../../hooks/useAgentAccounts";
 import { useSettings } from "../../hooks/useSettings";
 import { versionLabel } from "../../hooks/useHarnessUpdates";
 import { agentLabel } from "../../lib/agent-options";
@@ -38,11 +39,13 @@ import type { ConversationAccount, ConversationThreadState, McpServer } from "..
 export const ReauthBanner = memo(function ReauthBanner({
 	account,
 	harness,
+	sessionId,
 	hostId,
 	cloud = false,
 }: {
 	account: ConversationAccount;
 	harness: string;
+	sessionId?: string;
 	/** The remote host that runs the session; omitted for this computer's. */
 	hostId?: string;
 	/** The session runs in the cloud, so its login is the cloud connection's. */
@@ -54,6 +57,11 @@ export const ReauthBanner = memo(function ReauthBanner({
 	const failure = account.authFailureId ?? `${harness}:${account.reauthRequiredAt}:${account.reauthReason}`;
 	const required = account.authenticationState === "required" ||
 		(account.authenticationState === undefined && Boolean(account.reauthRequiredAt));
+	const provider = required && !hostId && !cloud && sessionId ? agentAccountProviderFor(harness) : null;
+	const sessionAccounts = useSessionAgentAccounts(provider ? sessionId : undefined);
+	const accounts = useAgentAccounts(provider !== null);
+	const sessionAccountId = provider ? sessionAccounts.data?.[provider] : undefined;
+	const savedAccount = accounts.data?.find((candidate) => candidate.id === sessionAccountId && !candidate.device);
 	if (!required || dismissedFailure === failure) return null;
 	const agent = agentLabel(harness);
 	const host = hostId ? labelForHost(hostId) ?? hostId : undefined;
@@ -68,7 +76,7 @@ export const ReauthBanner = memo(function ReauthBanner({
 					focusAgentId: harness,
 					...(hostId ? { hostId } : {}),
 					harnessView: cloud ? "cloud" : "local",
-					startLogin: true,
+					...(savedAccount ? { loginAccountId: savedAccount.id } : { startLogin: true }),
 					preserveProject: true,
 				})}>
 				{t("chat.reauth.logInAgain")}
