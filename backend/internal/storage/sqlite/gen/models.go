@@ -893,8 +893,9 @@ type SessionSearchSource struct {
 type SessionSearchText struct {
 	ID    int64
 	Title string
-	Body  string
 	Paths string
+	Body  []byte
+	Hash  int64
 }
 
 type SessionTelemetry struct {
