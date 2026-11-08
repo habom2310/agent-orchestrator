@@ -2326,6 +2326,7 @@ func (s *Store) ConfirmConversationLogin(ctx context.Context, conversationID str
 	return cleared && err == nil, err
 }
 
+// RequireSessionLogin records a login demand on the session's chat unless one is pending.
 func (s *Store) RequireSessionLogin(ctx context.Context, id domain.SessionID, reason string, now time.Time) error {
 	s.writeMu.Lock()
 	defer s.writeMu.Unlock()
