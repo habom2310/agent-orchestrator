@@ -578,6 +578,7 @@ export const useUiStore = create<UiState>((set, get) => ({
 		},
 	})),
 	openProjectSettings: (projectId, options) => set({
+		accountLogin: null,
 		settingsModal: {
 			scope: "project",
 			projectId,
@@ -587,6 +588,7 @@ export const useUiStore = create<UiState>((set, get) => ({
 		},
 	}),
 	closeSettings: () => set((state) => ({
+		accountLogin: null,
 		settingsModal: state.settingsModal?.scope === "global" ? state.settingsModal.returnTo ?? null : null,
 	})),
 	syncSystemTheme: () => {
