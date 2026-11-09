@@ -67,6 +67,7 @@ function toPullRequestFacts(pr: components["schemas"]["SessionPRFacts"]): PullRe
 
 function toSessionArtifact(artifact: components["schemas"]["SessionArtifact"]): SessionArtifact {
 	return {
+		...(artifact.id ? { id: artifact.id } : {}),
 		kind: artifact.kind,
 		name: artifact.name,
 		path: artifact.path,
@@ -76,6 +77,7 @@ function toSessionArtifact(artifact: components["schemas"]["SessionArtifact"]): 
 		size: artifact.size,
 		updatedAt: artifact.updatedAt,
 		registered: artifact.registered,
+		...(artifact.previousPaths?.length ? { previousPaths: artifact.previousPaths } : {}),
 	};
 }
 
