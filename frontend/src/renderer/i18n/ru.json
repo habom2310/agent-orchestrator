@@ -4398,7 +4398,5 @@
 	"search.matchCount_one": "{{count}} совпадение",
 	"search.matchCount_few": "{{count}} совпадения",
 	"search.matchCount_many": "{{count}} совпадений",
-	"search.matchCount_other": "{{count}} совпадения",
-	"chat.findLabel": "Найти в чате",
-	"chat.findPlaceholder": "Найти в чате…"
+	"search.matchCount_other": "{{count}} совпадения"
 }

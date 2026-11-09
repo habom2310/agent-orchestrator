@@ -359,14 +359,21 @@ function useQueuedMessages(snapshot: ConversationSnapshot, excludeTurnId?: strin
 	}, [excludeTurnId, snapshot.items, snapshot.turns]);
 }
 
+/** A request to open find in chat; see ChatWorkspaceProps.findRequest. */
+export type ChatFindRequest = { id: string; query: string; messageId?: string };
+
 export interface ChatWorkspaceProps {
 	onAddToSideChat?: (excerpt: ChatDraftExcerptReference) => void | Promise<void>;
 	checkingSideChatAvailability?: boolean;
 	annotationNavigationRequest?: { id: string; text: string; messageId?: string; revision?: number };
 	/** Called once the chat applied annotationNavigationRequest, so its owner drops it rather than have a later mount replay it. */
 	onAnnotationNavigationHandled?: (id: string) => void;
-	/** Floats over the top of the transcript, such as the in-session find bar. */
-	timelineOverlay?: ReactNode;
+	/**
+	 * Opens find in chat with this query, its first match in messageId: a
+	 * session search result handing its search to the session it opens. A new
+	 * id opens it again.
+	 */
+	findRequest?: ChatFindRequest;
 	snapshot: ConversationSnapshot;
 	promptSuggestion?: ComposerPromptSuggestion;
 	/** Renderer-owned state identity; the snapshot's sessionId remains the daemon wire ID. */
@@ -729,7 +736,7 @@ function ChatWorkspaceContent({
 	checkingSideChatAvailability,
 	annotationNavigationRequest,
 	onAnnotationNavigationHandled,
-	timelineOverlay,
+	findRequest,
 	snapshot,
 	promptSuggestion,
 	sessionTitle,
@@ -2019,7 +2026,7 @@ function ChatWorkspaceContent({
 								<Timeline
 							onAddToSideChat={onAddToSideChat}
 									checkingSideChatAvailability={checkingSideChatAvailability}
-									overlay={timelineOverlay}
+									findRequest={findRequest}
 									workerUpdates={sessionRole === "orchestrator"}
 									annotationNavigationRef={annotationNavigationRef}
 									key={draftScopeKey}
@@ -2874,7 +2881,7 @@ export function Timeline({
 	workerUpdates = false,
 	openingStartedAt,
 	openingStartupLabel,
-	overlay,
+	findRequest,
 }: {
 	onAddToSideChat?: ChatWorkspaceProps["onAddToSideChat"];
 	checkingSideChatAvailability?: boolean;
@@ -2922,8 +2929,8 @@ export function Timeline({
 	openingStartedAt?: string;
 	/** Names the opening start in place of its timer while the sandbox comes up. */
 	openingStartupLabel?: string;
-	/** Floats over the top of the transcript (the in-session find bar). */
-	overlay?: ReactNode;
+	/** Opens find in chat with a query; see ChatWorkspaceProps.findRequest. */
+	findRequest?: ChatFindRequest;
 }) {
 	const findSurface = useRef<HTMLDivElement>(null);
 	const scroller = useRef<HTMLDivElement>(null);
@@ -2932,6 +2939,13 @@ export function Timeline({
 	const findPausedFollow = useRef(false);
 	const [findTarget, setFindTarget] = useState<FindOccurrence>();
 	const find = useChatFind({ source: sourceSnapshot, root: findSurface, viewport: scroller, hostId: useContext(ChatHostId), unavailable: findUnavailable, sideChat, pauseFollow: () => pauseFindFollow.current(), onScrollWritten: (top) => findScrollWritten.current(top), reveal: (hit) => setFindTarget({ ...hit }) });
+	// One open per request. openWith changes identity as find opens and closes,
+	// so it is read through a ref: only a new request may open find again.
+	const openFind = useRef(find.openWith);
+	openFind.current = find.openWith;
+	useEffect(() => {
+		if (findRequest) openFind.current(findRequest.query, findRequest.messageId);
+	}, [findRequest]);
 	const snapshot = find.snapshot;
 	const hasTranscript = snapshot.items.length > 0;
 	const arrivedEmpty = useRef(false);
@@ -4726,7 +4740,6 @@ export function Timeline({
 			style={{ contain: "layout paint" }}
 		>
 			{find.bar}
-			{overlay}
 			{selectionAction ? <ChatSelectionActions key={selectionAction.excerpt.id} selection={selectionAction}
 				viewportRef={scroller} onInvalid={clearSelectionAction} onAdd={addSelectionToChat}
 				onSide={onAddToSideChat} checkingSide={checkingSideChatAvailability} /> : null}
