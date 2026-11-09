@@ -193,6 +193,7 @@ import {
 	fullQueuedTurnOrder,
 	hiddenTimelineTurnIds,
 	isUserQueuePrompt,
+	needsReauth,
 	queuedTurnIds,
 	type ConversationPlan,
 	type ConversationSnapshot,
@@ -1971,6 +1972,7 @@ function ChatWorkspaceContent({
 							onOpenShell={onOpenShell}
 							openingShell={openingShell}
 							shellError={shellError}
+							signInRequired={needsReauth(snapshot)}
 						/>
 					)}
 					{snapshot.threadState ? <ThreadStateBanner threadState={snapshot.threadState} /> : null}
@@ -2594,6 +2596,7 @@ function ControllerBanner({
 	openingShell,
 	shellError,
 	quietConnect = false,
+	signInRequired = false,
 }: {
 	controller: { state: ControllerState; error?: string };
 	/** The chat already shows the opening brief as working; connecting needs no banner. */
@@ -2611,6 +2614,7 @@ function ControllerBanner({
 	onOpenShell?: () => void;
 	openingShell?: boolean;
 	shellError?: string;
+	signInRequired?: boolean;
 }) {
 	const { t } = useTranslation();
 	// Startup failures use the checklist's Retry action.
@@ -2654,6 +2658,7 @@ function ControllerBanner({
 	if (!shown) return null;
 	const loading = controller.state === "connecting" || waking || restarting;
 	const actionable = controller.state === "stopped" && !waking && !restarting;
+	if (actionable && !terminated && signInRequired) return null;
 
 	return (
 		<div

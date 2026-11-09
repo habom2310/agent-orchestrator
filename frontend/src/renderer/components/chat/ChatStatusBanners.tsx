@@ -25,11 +25,10 @@ import { cn, truncateMiddle } from "../../lib/utils";
 import { useUiStore } from "../../stores/ui-store";
 import type { SessionStaleBinary } from "../../types/workspace";
 import { Button } from "../ui/button";
-import { CloseButton } from "../ui/close-button";
 import type { ConversationAccount, ConversationThreadState, McpServer } from "../../types/conversation";
 
 /**
- * The provider refused this session's login; dismissal affects presentation only.
+ * The provider refused this session's login.
  *
  * An expired login is routine, so the notice says so plainly and offers one way
  * out: the Harness page, which signs in on the computer that runs the session,
@@ -52,11 +51,9 @@ export const ReauthBanner = memo(function ReauthBanner({
 	cloud?: boolean;
 }) {
 	const { t } = useTranslation();
-	const [dismissedFailure, setDismissedFailure] = useState<string>();
-	const failure = account.authFailureId ?? `${harness}:${account.reauthRequiredAt}:${account.reauthReason}`;
 	const required = account.authenticationState === "required" ||
 		(account.authenticationState === undefined && Boolean(account.reauthRequiredAt));
-	if (!required || dismissedFailure === failure) return null;
+	if (!required) return null;
 	const agent = agentLabel(harness);
 	const host = hostId ? labelForHost(hostId) ?? hostId : undefined;
 	return (
@@ -66,9 +63,6 @@ export const ReauthBanner = memo(function ReauthBanner({
 				{host ? t("chat.reauth.expiredOnHost", { agent, host }) : t("chat.reauth.expired", { agent })}
 			</p>
 			<ReauthLogInButton harness={harness} sessionId={sessionId} hostId={hostId} cloud={cloud} />
-			<CloseButton size="icon-xs" className="shrink-0"
-				aria-label="Dismiss authentication notice" title="Hide this notice; authentication state is unchanged"
-				onClick={() => setDismissedFailure(failure)} />
 		</div>
 	);
 });
