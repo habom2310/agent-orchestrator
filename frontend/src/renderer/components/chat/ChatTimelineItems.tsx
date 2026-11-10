@@ -13,7 +13,7 @@ import { stagedAttachmentParts, attachmentURL, IMAGE_ATTACHMENT_PATH, splitInlin
 import { ChatImage } from "./ChatImage";
 import { CloudMessageAttachments } from "./CloudMessageAttachments";
 import { splitCloudAttachmentReferences } from "../../lib/cloud-attachments";
-import { createContext, Fragment, memo, useCallback, useContext, useEffect, useId, useMemo, useRef, useState, type ReactNode } from "react";
+import { createContext, Fragment, memo, useCallback, useContext, useEffect, useId, useMemo, useRef, useState, type ClipboardEvent, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { agentModelsQueryOptions } from "../../hooks/useAgentModelsQuery";
@@ -126,7 +126,7 @@ import { getApiBaseUrl } from "../../lib/api-client";
 import { readArtifactRef, readRenderRef } from "../../lib/render-frame";
 import { aoToolView, mcpToolArguments, mcpToolName, type AOToolView } from "../../lib/mcp-tool";
 import { isWebLink, openLinkInSystemBrowser } from "../../lib/external-link-policy";
-import { ActivityTitle, ChatMarkdown, OriginPreviewMarkdown, SessionLabelLink, SessionLinkedText } from "./ChatMarkdown";
+import { ActivityTitle, ChatMarkdown, OriginPreviewMarkdown, SessionLabelLink, SessionLinkedText, UserMarkdown } from "./ChatMarkdown";
 import { HighlightedCode } from "./HighlightedCode";
 import { CopyButton } from "./CopyButton";
 import { CollapsibleHumanBody } from "./CollapsibleHumanBody";
@@ -807,6 +807,31 @@ function formatTokens(tokens: number): string {
 }
 
 /**
+ * The bubble's text renderer: inline image chips when the message has images,
+ * nothing otherwise, so a message without them keeps UserMarkdown's memo.
+ */
+function inlineImageRenderer(attachments: string[], sessionId: string, apiBaseUrl: string | null) {
+	if (apiBaseUrl === null || !attachments.some((path) => IMAGE_ATTACHMENT_PATH.test(path))) return undefined;
+	return (text: string) => (
+		<ProseWithInlineImages text={text} attachments={attachments} sessionId={sessionId} apiBaseUrl={apiBaseUrl} renderText={(plain) => plain} />
+	);
+}
+
+const collapseWhitespace = (text: string) => text.replace(/\s+/g, "");
+
+/**
+ * Copying the whole of a rendered message gives back what the person typed, list
+ * markers and backticks included, as the Copy button does. A partial selection
+ * copies what it shows.
+ */
+function copyWholeMessageAsTyped(event: ClipboardEvent<HTMLDivElement>, typed: string) {
+	const selected = window.getSelection()?.toString() ?? "";
+	if (!selected.trim() || collapseWhitespace(selected) !== collapseWhitespace(event.currentTarget.textContent ?? "")) return;
+	event.preventDefault();
+	event.clipboardData.setData("text/plain", typed);
+}
+
+/**
  * Prose whose inline staged image paths (written by the composer's image chips)
  * render as chips that open the image. "Image N" counts images in attachment
  * order, the same label the attachment row and the composer use.
@@ -1091,15 +1116,12 @@ export function HumanMessage({
 						>
 							<CollapsibleHumanBody stateKey={visibleMessageText}>
 								{body ? (
-									<p data-chat-message-body="" className="break-words whitespace-pre-wrap text-pretty">
-										<ProseWithInlineImages
+									<div data-chat-message-body="" className="break-words text-pretty" onCopy={(event) => copyWholeMessageAsTyped(event, body)}>
+										<UserMarkdown
 											text={body}
-											attachments={attachments}
-											sessionId={sessionId}
-											apiBaseUrl={apiBaseUrl}
-											renderText={(text) => <SessionLinkedText text={text} />}
+											renderText={inlineImageRenderer(attachments, sessionId, apiBaseUrl)}
 										/>
-									</p>
+									</div>
 								) : null}
 							</CollapsibleHumanBody>
 						</div>
@@ -3355,17 +3377,11 @@ export function SteerMessage({
 						</AttachmentStrip>
 					) : null}
 					{body || (attachments.length === 0 && remainingContent.length === 0) ? (
-						<div className="break-words whitespace-pre-wrap text-sm leading-[1.55] w-fit max-w-[min(78%,560px)] rounded-[10px] bg-raised px-3 py-2.5 text-foreground">
+						<div className="break-words text-sm leading-[1.55] w-fit max-w-[min(78%,560px)] rounded-[10px] bg-raised px-3 py-2.5 text-foreground">
 							{body ? (
-								<p>
-									<ProseWithInlineImages
-										text={body}
-										attachments={attachments}
-										sessionId={sessionId}
-										apiBaseUrl={apiBaseUrl}
-										renderText={(text) => text}
-									/>
-								</p>
+								<div onCopy={(event) => copyWholeMessageAsTyped(event, body)}>
+									<UserMarkdown text={body} renderText={inlineImageRenderer(attachments, sessionId, apiBaseUrl)} />
+								</div>
 							) : null}
 						</div>
 					) : null}
